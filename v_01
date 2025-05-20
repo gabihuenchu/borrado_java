@@ -1,0 +1,265 @@
+Agregar producto
+
+
+Actualizar producto
+
+
+Eliminar producto
+
+
+Ajustar cantidad de stock
+
+
+Consultar disponibilidad de productos en un intervalo de tiempo
+
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+
+@Entity
+public class Producto {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String nombre;
+    private Double precio;
+    private String descripcion;
+    private Integer cantidadStock;
+
+    // Constructores, getters y setters
+    public Producto() {
+    }
+
+    public Producto(String nombre, Double precio, String descripcion, Integer cantidadStock) {
+        this.nombre = nombre;
+        this.precio = precio;
+        this.descripcion = descripcion;
+        this.cantidadStock = cantidadStock;
+    }
+
+    // Getters y setters
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    public Double getPrecio() {
+        return precio;
+    }
+
+    public void setPrecio(Double precio) {
+        this.precio = precio;
+    }
+
+    public String getDescripcion() {
+        return descripcion;
+    }
+
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
+    }
+
+    public Integer getCantidadStock() {
+        return cantidadStock;
+    }
+
+    public void setCantidadStock(Integer cantidadStock) {
+        this.cantidadStock = cantidadStock;
+    }
+}
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface ProductoRepository extends JpaRepository<Producto, Long> {
+    // Aquí podemos agregar consultas personalizadas si es necesario
+}
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.Optional;
+
+@Service
+public class ProductoService {
+
+    @Autowired
+    private ProductoRepository productoRepository;
+
+    // Agregar un nuevo producto
+    public Producto agregarProducto(Producto producto) {
+        return productoRepository.save(producto);
+    }
+
+    // Actualizar un producto existente
+    public Producto actualizarProducto(Long id, Producto producto) {
+        Optional<Producto> existingProduct = productoRepository.findById(id);
+        if (existingProduct.isPresent()) {
+            Producto productoToUpdate = existingProduct.get();
+            productoToUpdate.setNombre(producto.getNombre());
+            productoToUpdate.setPrecio(producto.getPrecio());
+            productoToUpdate.setDescripcion(producto.getDescripcion());
+            productoToUpdate.setCantidadStock(producto.getCantidadStock());
+            return productoRepository.save(productoToUpdate);
+        } else {
+            throw new RuntimeException("Producto no encontrado");
+        }
+    }
+
+    // Eliminar un producto
+    public void eliminarProducto(Long id) {
+        productoRepository.deleteById(id);
+    }
+
+    // Ajustar el stock de un producto
+    public Producto ajustarStock(Long id, Integer cantidad) {
+        Optional<Producto> existingProduct = productoRepository.findById(id);
+        if (existingProduct.isPresent()) {
+            Producto productoToUpdate = existingProduct.get();
+            productoToUpdate.setCantidadStock(productoToUpdate.getCantidadStock() + cantidad);
+            return productoRepository.save(productoToUpdate);
+        } else {
+            throw new RuntimeException("Producto no encontrado");
+        }
+    }
+
+    // Consultar disponibilidad en un lapso de tiempo
+    public boolean consultarDisponibilidad(Long id, Integer cantidad, Long tiempoMaximo) {
+        Optional<Producto> producto = productoRepository.findById(id);
+        if (producto.isPresent()) {
+            Producto p = producto.get();
+            return p.getCantidadStock() >= cantidad;
+        } else {
+            throw new RuntimeException("Producto no encontrado");
+        }
+    }
+}
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/productos")
+public class ProductoController {
+
+    @Autowired
+    private ProductoService productoService;
+
+    // Agregar producto
+    @PostMapping
+    public ResponseEntity<Producto> agregarProducto(@RequestBody Producto producto) {
+        Producto nuevoProducto = productoService.agregarProducto(producto);
+        return ResponseEntity.ok(nuevoProducto);
+    }
+
+    // Actualizar producto
+    @PutMapping("/{id}")
+    public ResponseEntity<Producto> actualizarProducto(@PathVariable Long id, @RequestBody Producto producto) {
+        Producto productoActualizado = productoService.actualizarProducto(id, producto);
+        return ResponseEntity.ok(productoActualizado);
+    }
+
+    // Eliminar producto
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminarProducto(@PathVariable Long id) {
+        productoService.eliminarProducto(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // Ajustar stock
+    @PatchMapping("/{id}/stock")
+    public ResponseEntity<Producto> ajustarStock(@PathVariable Long id, @RequestParam Integer cantidad) {
+        Producto productoActualizado = productoService.ajustarStock(id, cantidad);
+        return ResponseEntity.ok(productoActualizado);
+    }
+
+    // Consultar disponibilidad
+    @GetMapping("/{id}/disponibilidad")
+    public ResponseEntity<Boolean> consultarDisponibilidad(@PathVariable Long id, @RequestParam Integer cantidad, @RequestParam Long tiempoMaximo) {
+        boolean disponible = productoService.consultarDisponibilidad(id, cantidad, tiempoMaximo);
+        return ResponseEntity.ok(disponible);
+    }
+}
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/productos")
+public class ProductoController {
+
+    @Autowired
+    private ProductoService productoService;
+
+    // Agregar producto
+    @PostMapping
+    public ResponseEntity<Producto> agregarProducto(@RequestBody Producto producto) {
+        Producto nuevoProducto = productoService.agregarProducto(producto);
+        return ResponseEntity.ok(nuevoProducto);
+    }
+
+    // Actualizar producto
+    @PutMapping("/{id}")
+    public ResponseEntity<Producto> actualizarProducto(@PathVariable Long id, @RequestBody Producto producto) {
+        Producto productoActualizado = productoService.actualizarProducto(id, producto);
+        return ResponseEntity.ok(productoActualizado);
+    }
+
+    // Eliminar producto
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminarProducto(@PathVariable Long id) {
+        productoService.eliminarProducto(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // Ajustar stock
+    @PatchMapping("/{id}/stock")
+    public ResponseEntity<Producto> ajustarStock(@PathVariable Long id, @RequestParam Integer cantidad) {
+        Producto productoActualizado = productoService.ajustarStock(id, cantidad);
+        return ResponseEntity.ok(productoActualizado);
+    }
+
+    // Consultar disponibilidad
+    @GetMapping("/{id}/disponibilidad")
+    public ResponseEntity<Boolean> consultarDisponibilidad(@PathVariable Long id, @RequestParam Integer cantidad, @RequestParam Long tiempoMaximo) {
+        boolean disponible = productoService.consultarDisponibilidad(id, cantidad, tiempoMaximo);
+        return ResponseEntity.ok(disponible);
+    }
+}
+
+spring.datasource.url=jdbc:h2:mem:testdb
+spring.datasource.driverClassName=org.h2.Driver
+spring.datasource.username=sa
+spring.datasource.password=password
+spring.jpa.hibernate.ddl-auto=update
+spring.h2.console.enabled=true
+
+http://localhost:8080 con las rutas siguientes:
+POST /api/productos: Agregar un nuevo producto.
+
+
+PUT /api/productos/{id}: Actualizar un producto.
+
+
+DELETE /api/productos/{id}: Eliminar un producto.
+
+
+PATCH /api/productos/{id}/stock: Ajustar la cantidad de stock de un producto.
+
+
+GET /api/productos/{id}/disponibilidad: Consultar si un producto tiene suficiente stock disponible.
+
